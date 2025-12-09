@@ -10,7 +10,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.7
+        value: 3.11.9
       - key: MONGODB_URL
         sync: false
       - key: MONGODB_DB_NAME
