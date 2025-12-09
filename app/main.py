@@ -5,7 +5,7 @@ from app.core.database import init_db
 from app.api import auth, chat, universities, knowledge
 import logging
 
-# Configure logging
+# Configure logging (updated for deployment)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

@@ -26,8 +26,4 @@ services:
       - key: CORS_ORIGINS
         value: '["*"]'
       - key: CHROMA_PERSIST_DIRECTORY
-        value: /opt/render/project/src/chroma_db
-    disk:
-      name: chroma-data
-      mountPath: /opt/render/project/src/chroma_db
-      sizeGB: 1
+        value: ./chroma_db
