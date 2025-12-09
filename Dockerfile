@@ -22,8 +22,14 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p /app/data /app/chroma_db
 
-# Ensure __init__.py files exist in all packages
-RUN touch /app/app/__init__.py /app/app/models/__init__.py /app/app/api/__init__.py /app/app/core/__init__.py /app/app/schemas/__init__.py /app/app/services/__init__.py
+# Ensure all package directories exist and have __init__.py
+RUN mkdir -p /app/app/models /app/app/api /app/app/core /app/app/schemas /app/app/services && \
+    touch /app/app/__init__.py \
+    /app/app/models/__init__.py \
+    /app/app/api/__init__.py \
+    /app/app/core/__init__.py \
+    /app/app/schemas/__init__.py \
+    /app/app/services/__init__.py
 
 # Set Python path
 ENV PYTHONPATH=/app
