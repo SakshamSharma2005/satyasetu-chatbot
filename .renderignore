@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Database (local only)
+*.db
+*.db-journal
+
+# Logs
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Scripts (not needed in production)
+check_*.py
+test_*.py
+get_*.py
+set_*.py
+load_sample_data.py
+find_*.py
+example_*.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development files
+Dockerfile
+.dockerignore
+docker-compose.yml

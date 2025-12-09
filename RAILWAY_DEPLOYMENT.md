@@ -1,6 +1,6 @@
-# Railway Deployment Guide - Docker Build Method
+# Railway Deployment Guide - Nixpacks Build Method
 
-This guide will help you deploy the Satyasetu Chatbot to Railway using the Docker build method.
+This guide will help you deploy the Satyasetu Chatbot to Railway using Nixpacks (Railway's default build method).
 
 ## Prerequisites
 
@@ -11,17 +11,19 @@ This guide will help you deploy the Satyasetu Chatbot to Railway using the Docke
 ## Step 1: Prepare Your Repository
 
 The following files have been created for Railway deployment:
-- `Dockerfile` - Defines the container image
-- `.dockerignore` - Excludes unnecessary files from the build
+- `nixpacks.toml` - Nixpacks build configuration
 - `railway.json` - Railway-specific configuration
-
+- `Procfile` - Process type definitions (optional, railway.json takes precedence)
+- `runtime.txt` - Python version specification
 ## Step 2: Push to GitHub
 
 Make sure all changes are committed and pushed:
 
 ```bash
-git add Dockerfile .dockerignore railway.json RAILWAY_DEPLOYMENT.md
-git commit -m "Add Railway Docker deployment configuration"
+git add nixpacks.toml railway.json RAILWAY_DEPLOYMENT.md
+git commit -m "Add Railway Nixpacks deployment configuration"
+git push origin main
+``` commit -m "Add Railway Docker deployment configuration"
 git push origin main
 ```
 
@@ -30,7 +32,7 @@ git push origin main
 1. Go to [railway.app/new](https://railway.app/new)
 2. Click **"Deploy from GitHub repo"**
 3. Select your repository: `SakshamSharma2005/satyasetu-chatbot`
-4. Railway will detect the Dockerfile automatically
+4. Railway will automatically use Nixpacks to build your Python app
 
 ## Step 4: Add MongoDB Database
 
@@ -144,7 +146,8 @@ python load_sample_data.py
 ### Build Fails
 - Check the build logs in Railway dashboard
 - Ensure all dependencies in `requirements.txt` are compatible
-- Verify Dockerfile syntax
+- Verify `nixpacks.toml` syntax
+- Check that Python 3.11 is specified in `runtime.txt`
 
 ### App Crashes on Startup
 - Check `MONGODB_URL` is correct

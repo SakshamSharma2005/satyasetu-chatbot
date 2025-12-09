@@ -27,7 +27,10 @@ class StudentDataCreate(BaseModel):
 @router.get("/my-certificates")
 async def get_my_certificates(current_user: User = Depends(get_current_user_mongo)):
     """Get all certificates for the logged-in student."""
-    certificates = await StudentDataService.get_student_certificates(str(current_user.id))
+    certificates = await StudentDataService.get_student_certificates(
+        user_email=current_user.email,
+        user_id=str(current_user.id)
+    )
     return {
         "student_name": current_user.full_name,
         "total_certificates": len(certificates),
@@ -39,7 +42,10 @@ async def get_my_certificates(current_user: User = Depends(get_current_user_mong
 async def get_my_student_profile(current_user: User = Depends(get_current_user_mongo)):
     """Get complete student profile with certificates and data."""
     student_data = await StudentDataService.get_student_data(str(current_user.id))
-    certificates = await StudentDataService.get_student_certificates(str(current_user.id))
+    certificates = await StudentDataService.get_student_certificates(
+        user_email=current_user.email,
+        user_id=str(current_user.id)
+    )
     
     return {
         "student_name": current_user.full_name,

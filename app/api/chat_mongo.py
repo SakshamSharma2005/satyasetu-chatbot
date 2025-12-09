@@ -73,7 +73,8 @@ async def chat_mongo(
             current_user.email, 
             current_user.full_name or current_user.email.split('@')[0],
             user_role,
-            organization_id
+            organization_id,
+            user_id=str(current_user.id)
         )
         
         # Create personalized system prompt with user info, student data, and context

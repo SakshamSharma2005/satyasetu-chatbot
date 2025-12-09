@@ -9,13 +9,19 @@ class StudentDataService:
     """Service to query student-specific data from MongoDB."""
     
     @staticmethod
-    async def get_student_certificates(user_email: str, user_role: str = "USER", organization_id: str = None) -> List[Dict]:
-        """Get certificates based on user role."""
+    async def get_student_certificates(
+        user_email: Optional[str] = None,
+        user_id: Optional[str] = None,
+        user_role: str = "USER",
+        organization_id: str = None
+    ) -> List[Dict]:
+        """Get certificates based on user role, matching by email or user ID."""
         try:
             # Query MongoDB certificates collection directly using Motor
             from motor.motor_asyncio import AsyncIOMotorClient
             from app.core.config import settings
             from bson import ObjectId
+            from bson.errors import InvalidId
             
             client = AsyncIOMotorClient(settings.MONGODB_URL)
             db = client[settings.MONGODB_DB_NAME]
@@ -30,30 +36,68 @@ class StudentDataService:
                 query = {"institutionId": ObjectId(organization_id)}
                 limit = 1000
             else:
-                # Student: Get only their own certificates
-                query = {"student.email": user_email}
-                limit = 100
+                # Student: Try multiple identifiers (email and user_id variants)
+                or_filters = []
+
+                if user_email:
+                    or_filters.extend([
+                        {"student.email": user_email},
+                        {"studentEmail": user_email},
+                        {"studentEmailId": user_email},
+                    ])
+
+                if user_id:
+                    # Match both string and ObjectId representations
+                    or_filters.append({"student_id": user_id})
+                    or_filters.append({"studentId": user_id})
+                    try:
+                        object_id = ObjectId(user_id)
+                        or_filters.append({"student_id": object_id})
+                        or_filters.append({"studentId": object_id})
+                    except (InvalidId, TypeError):
+                        pass
+
+                # Fallback to empty query if nothing to match
+                query = {"$or": or_filters} if or_filters else {}
+                limit = 200
             
             certificates_cursor = db.certificates.find(query)
             certificates = await certificates_cursor.to_list(length=limit)
             
             client.close()
             
-            return [
-                {
-                    "certificate_id": cert.get("certificateId"),
-                    "name": cert.get("student", {}).get("fullName"),
-                    "course": cert.get("student", {}).get("course"),
-                    "issue_date": cert.get("issuedAt").strftime("%Y-%m-%d") if cert.get("issuedAt") else "N/A",
-                    "grade": cert.get("student", {}).get("cgpa"),
+            results = []
+            for cert in certificates:
+                issued_at = cert.get("issuedAt") or cert.get("issue_date")
+                if hasattr(issued_at, "strftime"):
+                    issued_at_str = issued_at.strftime("%Y-%m-%d")
+                else:
+                    issued_at_str = str(issued_at) if issued_at else "N/A"
+
+                # Extract student information
+                student_info = cert.get("student", {})
+                
+                results.append({
+                    "certificate_id": cert.get("certificateId") or cert.get("certificate_id"),
+                    "name": student_info.get("fullName") if student_info else cert.get("student_name"),
+                    "father_name": student_info.get("fatherName"),
+                    "course": student_info.get("course") if student_info else cert.get("course_name"),
+                    "issue_date": issued_at_str,
+                    "grade": student_info.get("cgpa") if student_info else cert.get("grade"),
                     "status": cert.get("status"),
-                    "pdf_url": cert.get("pdfUrl"),
-                    "department": cert.get("student", {}).get("department"),
-                    "roll_number": cert.get("student", {}).get("rollNumber"),
-                    "student_email": cert.get("student", {}).get("email")
-                }
-                for cert in certificates
-            ]
+                    "pdf_url": cert.get("pdfUrl") or cert.get("storage", {}).get("url"),
+                    "cloudinary_url": cert.get("pdfUrl") or cert.get("storage", {}).get("url"),
+                    "verification_url": cert.get("verificationUrl"),
+                    "department": student_info.get("department") if student_info else cert.get("department"),
+                    "roll_number": student_info.get("rollNumber") if student_info else cert.get("roll_number"),
+                    "registration_number": student_info.get("registrationNumber"),
+                    "passing_year": student_info.get("passingYear"),
+                    "student_email": student_info.get("email") if student_info else cert.get("student_email"),
+                    "blockchain_status": cert.get("blockchainStatus"),
+                    "institution_name": cert.get("metadata", {}).get("institutionName")
+                })
+
+            return results
         except Exception as e:
             logger.error(f"Error fetching certificates: {e}")
             return []
@@ -79,12 +123,21 @@ class StudentDataService:
             return None
     
     @staticmethod
-    async def get_student_summary(user_email: str, user_name: str, user_role: str = "USER", organization_id: str = None) -> str:
+    async def get_student_summary(
+        user_email: str,
+        user_name: str,
+        user_role: str = "USER",
+        organization_id: str = None,
+        user_id: Optional[str] = None
+    ) -> str:
         """Get a formatted summary based on user role."""
         try:
             # Get certificates based on role
             certificates = await StudentDataService.get_student_certificates(
-                user_email, user_role, organization_id
+                user_email=user_email,
+                user_id=user_id,
+                user_role=user_role,
+                organization_id=organization_id
             )
             cert_count = len(certificates)
             
@@ -134,8 +187,14 @@ class StudentDataService:
                 if certificates:
                     summary += "\nCertificate Details:\n"
                     for i, cert in enumerate(certificates, 1):
-                        summary += f"{i}. {cert['name']} - {cert['course']} "
-                        summary += f"(Issued: {cert['issue_date']}, Status: {cert['status']})\n"
+                        summary += f"\n{i}. {cert['name']} - {cert['course']}\n"
+                        summary += f"   Certificate ID: {cert['certificate_id']}\n"
+                        summary += f"   Issued: {cert['issue_date']}, Status: {cert['status']}\n"
+                        summary += f"   Grade/CGPA: {cert.get('grade', 'N/A')}\n"
+                        if cert.get('cloudinary_url'):
+                            summary += f"   📄 PDF Download: {cert['cloudinary_url']}\n"
+                        if cert.get('verification_url'):
+                            summary += f"   🔗 Verify: {cert['verification_url']}\n"
             
             return summary
         except Exception as e:
