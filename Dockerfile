@@ -22,8 +22,11 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p /app/data /app/chroma_db
 
-# Verify app module exists
-RUN python -c "import sys; print(sys.path); import app; print('App module loaded successfully')"
+# Ensure __init__.py files exist in all packages
+RUN touch /app/app/__init__.py /app/app/models/__init__.py /app/app/api/__init__.py /app/app/core/__init__.py /app/app/schemas/__init__.py /app/app/services/__init__.py
+
+# Set Python path
+ENV PYTHONPATH=/app
 
 # Expose port
 EXPOSE 8080
